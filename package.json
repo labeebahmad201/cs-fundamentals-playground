@@ -1,0 +1,25 @@
+{
+  "name": "cs-fundamentals-playground",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Node.js/TypeScript fundamentals: good vs bad examples for learning and interview prep",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "demo:sql-injection": "tsx security/sql-injection/run-demo.ts",
+    "demo:error-handling": "tsx clean-code/error-handling/run-demo.ts",
+    "demo:solid": "tsx 1-solid-software-principles/run-all.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "sql.js": "^1.12.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.5"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

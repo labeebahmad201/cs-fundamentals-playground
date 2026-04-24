@@ -1,6 +1,6 @@
 # CS fundamentals playground
 
-This repo currently focuses on one core topic:
+This repo currently focuses on:
 
 ## Featured topic
 
@@ -12,6 +12,14 @@ This repo currently focuses on one core topic:
     - composition root wiring
   - Start with [`3-contracts-types-classes-composition/README.md`](3-contracts-types-classes-composition/README.md)
 
+- [`4-composition-root-pattern/`](4-composition-root-pattern/)
+  - Deep dive into composition root pattern:
+    - what it is
+    - why wiring in one place matters
+    - bad vs good TypeScript examples
+    - test-backed usage
+  - Start with [`4-composition-root-pattern/README.md`](4-composition-root-pattern/README.md)
+
 ## Quick start
 
 - Prerequisite: Node 20+
@@ -19,4 +27,5 @@ This repo currently focuses on one core topic:
 
 ```bash
 npm test -- 3-contracts-types-classes-composition/contracts-types-classes-composition.test.ts
+npm test -- 4-composition-root-pattern/composition-root-pattern.test.ts
 ```
