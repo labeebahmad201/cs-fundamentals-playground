@@ -1,15 +1,13 @@
 # Contracts vs Types vs Classes vs Composition
 
-This topic exists to answer one practical question:
+This guide is a framework-agnostic way to structure code so the same thinking works in TypeScript, C#, Java, and Go.
 
-**When should I use `interface`, `type`, a class/function/object implementation, and where do I wire them together?**
+Use this default:
 
-Short answer:
-
-- Use a **contract** for behavior seams (`interface` is common in TS).
-- Use a **data shape** for payloads (`type` or `interface`; team convention).
-- Use a **concrete implementation** (class/function/object) for actual behavior.
-- Use a **composition root** to choose concrete implementations.
+- Intent (use case) defines business flow.
+- Policy contracts (ports) define required capabilities.
+- Details (adapters) implement those capabilities.
+- Composition root wires details into intent.
 
 ## 4-layer thinking (TS, C#, Java, Go)
 
