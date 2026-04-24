@@ -9,6 +9,12 @@ Use this default:
 - Details (adapters) implement those capabilities.
 - Composition root wires details into intent.
 
+Why this helps in real projects:
+
+- Change-prone parts usually live in details (DB provider, email vendor, queue SDK, framework integrations).
+- Because high-level policy depends on contracts, when those details change you can swap implementations with minimal impact.
+- In practice, most changes stay in adapter + wiring code instead of forcing rewrites of the use case.
+
 ## 4-layer thinking (TS, C#, Java, Go)
 
 This model is language/framework agnostic. Only syntax changes across ecosystems.
