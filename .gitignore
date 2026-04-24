@@ -5,3 +5,8 @@ dist/
 .env
 .env.*
 
+# keep these local-only
+docker/
+security/
+types/
+
