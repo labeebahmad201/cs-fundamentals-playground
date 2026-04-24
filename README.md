@@ -1,38 +1,36 @@
 # CS fundamentals playground
 
-This repo currently focuses on:
+This repo is organized by topic groups so related ideas are learned together.
 
-## Featured topic
+## 1) Architecture foundations
 
 - [`3-contracts-types-classes-composition/`](3-contracts-types-classes-composition/)
-  - Source-backed, framework-agnostic guide for:
-    - 4-layer thinking (Intent -> Contracts -> Details -> Composition)
-    - when to use `interface` vs `type`
-    - concrete implementations (class/function/object)
-    - composition root wiring
+  - framework-agnostic 4-layer model (Intent -> Contracts -> Details -> Composition)
+  - `interface` vs `type`, concrete implementations, composition root
   - Start with [`3-contracts-types-classes-composition/README.md`](3-contracts-types-classes-composition/README.md)
 
+## 2) Wiring and lifecycle patterns
+
 - [`4-composition-root-pattern/`](4-composition-root-pattern/)
-  - Deep dive into composition root pattern:
-    - what it is
-    - why wiring in one place matters
-    - bad vs good TypeScript examples
-    - test-backed usage
+  - composition root pattern and wiring in one place
+  - bad vs good examples with tests
   - Start with [`4-composition-root-pattern/README.md`](4-composition-root-pattern/README.md)
 
 - [`6-singleton-pattern/`](6-singleton-pattern/)
-  - Singleton pattern trade-offs and safer alternatives
-  - Shows static-global anti-pattern vs composition-root-injected single instance
+  - singleton trade-offs and safer alternative via composition root injection
+  - static-global vs explicit dependency style
   - Start with [`6-singleton-pattern/README.md`](6-singleton-pattern/README.md)
 
+## 3) Design quality (module-level)
+
 - [`7-coupling-and-cohesion/`](7-coupling-and-cohesion/)
-  - Core design topic: low/high coupling and low/high cohesion
-  - Includes bad/good TypeScript examples and test-backed refactor cues
+  - low/high coupling and low/high cohesion
+  - refactor cues and bad/good examples
   - Start with [`7-coupling-and-cohesion/README.md`](7-coupling-and-cohesion/README.md)
 
 - [`8-use-case-orchestration-and-concerns/`](8-use-case-orchestration-and-concerns/)
-  - Defines concern as "reason to change" and clarifies what is allowed in use-case orchestration
-  - Shows bad/good TypeScript examples for orchestration vs inlined details
+  - concern = reason to change
+  - what is allowed in use-case orchestration vs what should be delegated
   - Start with [`8-use-case-orchestration-and-concerns/README.md`](8-use-case-orchestration-and-concerns/README.md)
 
 ## Quick start

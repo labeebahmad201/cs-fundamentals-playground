@@ -14,6 +14,18 @@ Good systems tend toward **lower coupling** and **higher cohesion**.
 - **Low cohesion**: one module does many unrelated jobs.
 - **High cohesion**: a module does one coherent job well.
 
+## Common confusion (important)
+
+These two are related, but not the same:
+
+- **"More than one reason to change"** is mainly a **cohesion** problem (low cohesion).
+- **Coupling** is about dependency shape between modules/classes, especially how strongly code is tied to concrete details.
+
+So a useful mental model is:
+
+- One concern / one reason to change -> cohesion usually improves.
+- Depending on contracts instead of volatile concrete details -> coupling usually improves.
+
 ## In this folder
 
 - `bad.ts`:
