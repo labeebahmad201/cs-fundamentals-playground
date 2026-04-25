@@ -33,6 +33,29 @@ This repo is organized by topic groups so related ideas are learned together.
   - what is allowed in use-case orchestration vs what should be delegated
   - Start with [`8-use-case-orchestration-and-concerns/README.md`](8-use-case-orchestration-and-concerns/README.md)
 
+- [`12-circular-dependencies/`](12-circular-dependencies/)
+  - what circular dependencies are and why module init order breaks
+  - bad `a <-> b` cycle vs good refactor through `shared`
+  - Start with [`12-circular-dependencies/README.md`](12-circular-dependencies/README.md)
+
+## 4) Type system internals
+
+- [`9-typescript-typeflags-bitmasks/`](9-typescript-typeflags-bitmasks/)
+  - `ts.Type`, `TypeFlags`, and bitmask checks (`|`, `&`)
+  - practical patterns for compiler API and ESLint rule logic
+  - Start with [`9-typescript-typeflags-bitmasks/README.md`](9-typescript-typeflags-bitmasks/README.md)
+
+- [`10-long-and-jsdoc-typing/`](10-long-and-jsdoc-typing/)
+  - the `long` package: int64 in JavaScript, safe integers vs `Number`, protobuf-style amounts
+  - JSDoc: `@typedef`, `@param`, `@template`, and `import("...")` types in `.js` (SDK-style)
+  - Start with [`10-long-and-jsdoc-typing/README.md`](10-long-and-jsdoc-typing/README.md)
+
+- [`11-namespaces-and-declare/`](11-namespaces-and-declare/)
+  - JSDoc `@namespace` + `HieroProto.proto.*` typedefs (JS SDKs)
+  - `declare` / `declare namespace` / `declare module` in `.d.ts` (e.g. generated protobuf)
+  - TypeScript `namespace` vs runtime ES modules; link to `declare global`
+  - Start with [`11-namespaces-and-declare/README.md`](11-namespaces-and-declare/README.md)
+
 ## Quick start
 
 - Prerequisite: Node 20+
@@ -44,4 +67,7 @@ npm test -- 4-composition-root-pattern/composition-root-pattern.test.ts
 npm test -- 6-singleton-pattern/singleton-pattern.test.ts
 npm test -- 7-coupling-and-cohesion/coupling-and-cohesion.test.ts
 npm test -- 8-use-case-orchestration-and-concerns/use-case-orchestration-and-concerns.test.ts
+npm test -- 10-long-and-jsdoc-typing/long-basics.test.ts
+npm test -- 11-namespaces-and-declare/namespace-basics.test.ts
+npm test -- 12-circular-dependencies/circular-dependencies.test.ts
 ```
