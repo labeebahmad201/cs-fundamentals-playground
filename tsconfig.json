@@ -11,6 +11,6 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true
   },
-  "include": ["**/*.ts"],
+  "include": ["**/*.ts", "11-namespaces-and-declare/ambient.d.ts"],
   "exclude": ["node_modules", "dist"]
 }
