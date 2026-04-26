@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+.env
+.env.*
+
+# keep these local-only
+docker/
+security/
+types/
+
