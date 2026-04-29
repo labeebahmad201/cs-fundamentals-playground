@@ -1,90 +1,292 @@
-# SOLID software principles (with working TypeScript examples)
+# Single Responsibility Principle (SRP)
 
-These five principles help you **structure** object-oriented code so it is easier to **change**, **test**, and **reason about**. Each section below includes a **definition**, a **small anti-pattern** in this repo, and a **fix** you can open in the editor.
+Robert C. Martin's clarified framing of SRP is:
 
-## Definitions
+> "A module should be responsible to one, and only one, actor."
 
-**S — Single Responsibility Principle (SRP).** A class or module should have **one, and only one, reason to change**—a single, coherent responsibility. If a type does unrelated jobs (e.g. validation, persistence, and email), changes to any one of those areas force you to re-edit the same class and make focused testing harder.
+An earlier phrasing ("a module should have one reason to change") was widely quoted, but it caused confusion around what exactly counts as a "reason."
 
-**O — Open/Closed Principle (OCP).** Software entities (classes, modules, functions) should be **open for extension** but **closed for modification**: you can add new behavior (new types, new strategy objects) without changing a stable, working core. You avoid piling new rules into a single `switch` or a growing `if` tree that every change has to re-touch.
+The "one actor" framing is usually clearer: if different stakeholders (actors) want different changes from the same module, that module is likely taking on more than one responsibility.
 
-**L — Liskov Substitution Principle (LSP).** **Subtypes must be substitutable** for their base type (or for the type they implement) **without breaking the expectations** of code that was written against the base. If callers assume “calling this method returns a usable value,” a subtype that throws, misbehaves, or returns nonsense under the same preconditions is not a valid substitute, even if it compiles.
+In code examples, this idea is often shown with classes, but the definition itself is about a **module** and who it serves.
 
-**I — Interface Segregation Principle (ISP).** **No client** should be forced to depend on **methods it does not use**. Large “fat” interfaces that mix many roles force every implementer and every consumer to know about the whole surface; **split the contract** so each client depends on the smallest set of methods it needs.
+## What is an actor?
 
-**D — Dependency Inversion Principle (DIP).** **High-level** policy and **low-level** details should both depend on **abstractions** (e.g. interfaces, ports), not on each other. **Abstractions** should not depend on concrete file/DB/HTTP/mail code; the **infrastructure** and framework details are supplied at a **composition root** (wiring) so the core can be tested and reconfigured without rewrites.
+In SRP, an **actor** is the person or group that asks for a specific kind of change in a module.
 
----
+An actor is usually a stakeholder role, not a technical component.  
+Examples of actors:
+- Accounting or Finance
+- Operations or Support
+- Security or Compliance
+- Product or Growth
 
-Run everything in one shot (console output for each letter):
+If one module serves multiple actors, each actor can pull the module in a different direction.  
+That is the SRP warning sign.
 
-```bash
-cd /Users/labeeb/Documents/projects/cs-fundamentals-playground
-npm run demo:solid
+### Quick example
+
+Imagine one `ReportModule` that:
+- calculates payroll totals (Finance actor)
+- formats CSV exports for operations (Operations actor)
+- enforces audit/redaction rules (Compliance actor)
+
+Now three different actors can request changes to the same module for unrelated reasons.  
+That coupling increases risk and makes changes harder to isolate.
+
+## The "multi-context module" trap
+
+A common path is to keep one module and make it work for multiple contexts by adding conditionals:
+- `if (context === "finance") ...`
+- `if (context === "ops") ...`
+- `if (context === "compliance") ...`
+
+At first this feels flexible, but it usually grows into tangled branching logic.  
+Each new actor adds more conditions, more edge cases, and more chances to break unrelated behavior.
+
+When a module starts splitting behavior by actor with many `if` or `switch` branches, treat it as a signal to separate responsibilities.
+
+## What teams mean by "context" for an actor
+
+When people say "this module supports multiple contexts," they usually mean each actor brings its own rules and constraints.
+
+For example, each actor can have a different:
+- **goal** (what outcome they care about)
+- **policy** (rules that must be enforced)
+- **data view** (which fields matter to them)
+- **change cadence** (how often their rules change)
+- **success metric** (how they define correctness)
+
+That is why context is not just a label like `"finance"` or `"ops"`.  
+A context carries different business meaning, and that meaning evolves independently per actor.
+
+Once those differences are real, forcing all contexts into one module usually creates constant branching and "change collisions" (one actor's update accidentally affecting another actor's behavior).
+
+## When modularity dies
+
+If one module keeps absorbing logic for many actors, it stops being a focused module and turns into a giant coordination blob (often called a "god module").
+
+Typical symptoms:
+- too many actor/context branches in one place
+- unrelated reasons to change the same file
+- growing fear of touching the module
+- regressions in one actor flow after changes for another actor
+
+At that point, modularity is effectively gone: responsibilities are centralized, coupling increases, and change becomes slower and riskier.
+
+SRP is the corrective move: split by actor-driven responsibility so each module can evolve with one stakeholder direction.
+
+## Bad examples (SRP violations)
+
+### 1) One module, many actor rules
+
+```ts
+type Actor = "finance" | "ops" | "compliance";
+
+export function handleReport(actor: Actor, data: unknown) {
+  if (actor === "finance") {
+    // payroll and tax calculations
+    return calculatePayrollReport(data);
+  }
+
+  if (actor === "ops") {
+    // export shape and delivery format
+    return exportCsv(data);
+  }
+
+  if (actor === "compliance") {
+    // audit and redaction policy
+    return redactAndAudit(data);
+  }
+
+  throw new Error("Unknown actor");
+}
 ```
 
-Run the automated checks for the “good” paths:
+Why this is bad: one module is being pulled by three actors with different goals and policies.
 
-```bash
-npm test -- 1-solid-software-principles/solid.test.ts
+### 2) Mixed business logic + infrastructure + policy
+
+```ts
+export async function processExpense(expense: Expense) {
+  // finance actor rules
+  if (expense.amount > 5_000 && !expense.managerApproved) {
+    throw new Error("Manager approval required");
+  }
+  if (expense.type === "travel" && !expense.receiptUrl) {
+    throw new Error("Receipt is required for travel");
+  }
+
+  // product/ops-driven branching
+  if (expense.source === "mobile") {
+    expense.tags.push("mobile-submission");
+  }
+
+  // persistence + SQL details
+  await db.query(
+    "INSERT INTO expenses (id, user_id, amount, type, status) VALUES (?, ?, ?, ?, ?)",
+    [expense.id, expense.userId, expense.amount, expense.type, "PENDING"]
+  );
+
+  // integration and message format details
+  await slackClient.postMessage({
+    channel: "#ops-expenses",
+    text: `Expense ${expense.id} submitted by ${expense.userId}`,
+  });
+
+  // compliance schema and storage details
+  await db.query(
+    "INSERT INTO audit_log (entity_id, event_type, payload_json, retention_days) VALUES (?, ?, ?, ?)",
+    [expense.id, "EXPENSE_SUBMITTED", JSON.stringify(expense), 2555]
+  );
+}
 ```
 
-| Letter | Principle | Bad (violation) | Good (direction) |
-|--------|------------|-----------------|------------------|
-| **S** | Single Responsibility | `s-single-responsibility/bad.ts` | `s-single-responsibility/good.ts` |
-| **O** | Open/Closed | `o-open-closed/bad.ts` | `o-open-closed/good.ts` |
-| **L** | Liskov Substitution | `l-liskov-substitution/bad.ts` | `l-liskov-substitution/good.ts` |
-| **I** | Interface Segregation | `i-interface-segregation/bad.ts` | `i-interface-segregation/good.ts` |
-| **D** | Dependency Inversion | `d-dependency-inversion/bad.ts` | `d-dependency-inversion/good.ts` |
+Why this is bad: finance policy, ops behavior, DB schema knowledge, external integrations, and compliance retention details are all in one function.
 
----
+### 3) "Context flag explosion"
 
-## S — Single Responsibility Principle
+```ts
+export function priceOrder(order: Order, context: "retail" | "enterprise" | "partner") {
+  if (context === "retail") {
+    // retail discounts
+  } else if (context === "enterprise") {
+    // enterprise contracts
+  } else if (context === "partner") {
+    // partner commission
+  }
 
-**In this example:** A class or module should not mix **validation**, **persistence**, and **email**; see the definition of S above.
+  // more context checks keep getting added here...
+}
+```
 
-**Bad:** `RegisterUserGod` in `s-single-responsibility/bad.ts` stores users, checks email format, and prints a “welcome” line. You cannot test “only validation” in isolation without pulling in the rest.
+Why this is bad: context branches grow over time and gradually create a god module.
 
-**Fix:** Split **validators**, **stores**, and **notifiers** behind small interfaces; let `UserRegistration` in `s-single-responsibility/good.ts` **orchestrate** them. Each piece can be swapped or unit-tested on its own.
+## Good examples (SRP-friendly)
 
----
+### 1) Split modules by actor responsibility
 
-## O — Open/Closed Principle
+```ts
+export class FinanceReportService {
+  buildPayrollReport(data: PayrollInput) {
+    return calculatePayrollReport(data);
+  }
+}
 
-**In this example:** New discount **rules** should be new types that plug into an engine, not new branches in one function. See the definition of O above.
+export class OperationsReportService {
+  buildCsvExport(data: OpsInput) {
+    return exportCsv(data);
+  }
+}
 
-**Bad:** `totalWithBranches` in `o-open-closed/bad.ts` adds rules with more `if` blocks. Every new marketing campaign reopens the same function.
+export class ComplianceReportService {
+  buildAuditedReport(data: ComplianceInput) {
+    return redactAndAudit(data);
+  }
+}
+```
 
-**Fix:** Model each rule as `PriceRule` with an `apply` method; `PricingEngine` in `o-open-closed/good.ts` **chains** rules. Add `FreeShippingRule` or `CapAtZeroRule` as new classes without changing the engine’s loop.
+Why this is better: each module has one actor direction and changes for one actor do not force edits in the others.
 
----
+### 2) Support auditing without turning one function into a blob
 
-## L — Liskov Substitution Principle
+```ts
+type DomainEvent =
+  | { type: "expense.submitted"; expenseId: string; userId: string; amount: number }
+  | { type: "expense.rejected"; expenseId: string; reason: string };
 
-**In this example:** Two implementations of the same interface should both be safe to use where the interface is expected: one that **throws** on normal use breaks callers that work with a sibling type. See the definition of L above.
+interface DomainEventBus {
+  publish(event: DomainEvent): Promise<void>;
+}
 
-**Bad:** `ExplodingTextSource` in `l-liskov-substitution/bad.ts` implements `TextSource` but `readAllLines` throws. Code that only iterates over `InMemoryTextSource` will break if you pass an exploding implementation.
+class ExpenseService {
+  constructor(private readonly repo: ExpenseRepository, private readonly eventBus: DomainEventBus) {}
 
-**Fix:** Keep implementations that share an interface **honest to the same contract** (see `InMemoryLines` and `PrefixedFileLines` in `l-liskov-substitution/good.ts`). If failure is normal, use a **narrower type** or return a `Result` / `Option` instead of throwing in one branch and not others.
+  async submit(expense: Expense): Promise<void> {
+    validateExpensePolicy(expense); // finance rules only
+    await this.repo.save(expense); // persistence only
 
----
+    // one business event; no compliance/ops implementation details here
+    await this.eventBus.publish({
+      type: "expense.submitted",
+      expenseId: expense.id,
+      userId: expense.userId,
+      amount: expense.amount,
+    });
+  }
+}
 
-## I — Interface Segregation Principle
+class OpsExpenseSubmittedHandler {
+  async handle(event: DomainEvent): Promise<void> {
+    if (event.type !== "expense.submitted") return;
+    await slackClient.postMessage({
+      channel: "#ops-expenses",
+      text: `Expense ${event.expenseId} submitted by ${event.userId}`,
+    });
+  }
+}
 
-**In this example:** A read-only feature should depend on a **read-only** slice of the API, not a “god” service interface that also lists writes and audits. See the definition of I above.
+class ComplianceAuditHandler {
+  async handle(event: DomainEvent): Promise<void> {
+    if (event.type !== "expense.submitted") return;
+    await db.query(
+      "INSERT INTO audit_log (entity_id, event_type, payload_json, retention_days) VALUES (?, ?, ?, ?)",
+      [event.expenseId, "EXPENSE_SUBMITTED", JSON.stringify(event), 2555]
+    );
+  }
+}
+```
 
-**Bad:** `FatProductService` in `i-interface-segregation/bad.ts` forces `ReadonlyDashboardBad` to be typed against the full surface, even if it only needs `allProductNames()`.
+Why this is better: the submit use case stays focused, and ops/compliance changes happen in separate handlers owned by different actor concerns.
 
-**Fix:** Split into **role interfaces**—`ProductQuery` for reads and `ProductCommand` for writes in `i-interface-segregation/good.ts`. `ReadonlyReport` only takes `ProductQuery`. One concrete `ProductService` can still implement both.
+### Implement interface vs use composition
 
----
+In the auditing example, `ExpenseService` does not implement ops or compliance behavior.  
+It only publishes a domain event and composes with collaborators.
 
-## D — Dependency Inversion Principle
+Use this rule:
+- **Implement an interface** when your class is a provider of that behavior.
+- **Compose with an interface** when your class only needs to use that behavior.
 
-**In this example:** A use case should take **injected** ports (e.g. `OrderRead`, `Notifier`) instead of calling static helpers for DB and SMTP. See the definition of D above.
+Applied here:
+- `ExpenseService` is an application/use-case orchestrator.
+- Separate handlers own ops and compliance behavior.
 
-**Bad:** `OrderNotifierDirect` in `d-dependency-inversion/bad.ts` calls `DirectInfra` directly. Unit tests are stuck with that shape unless you change production code.
+Quick test:
+Ask "If this behavior changes, should this class change?"
+- If yes, the class may implement that interface.
+- If no, keep it as a dependency and use composition.
 
-**Fix:** `OrderPlacedUseCase` in `d-dependency-inversion/good.ts` takes `OrderRead` and `Notifier`. Tests inject `fakeOrderRead` and `captureNotifier()`; production wiring passes real DB and SMTP implementations.
+### 3) Replace context flags with strategy per context
 
----
+```ts
+interface PricingPolicy {
+  price(order: Order): Money;
+}
+
+class RetailPricingPolicy implements PricingPolicy {
+  price(order: Order): Money {
+    return retailPrice(order);
+  }
+}
+
+class EnterprisePricingPolicy implements PricingPolicy {
+  price(order: Order): Money {
+    return contractPrice(order);
+  }
+}
+
+class PartnerPricingPolicy implements PricingPolicy {
+  price(order: Order): Money {
+    return partnerPrice(order);
+  }
+}
+```
+
+Why this is better: each policy evolves independently, instead of piling up more `if` branches in one growing function.
+
+SRP helps keep code:
+- easier to read
+- easier to test
+- safer to change
+- less coupled to unrelated behavior

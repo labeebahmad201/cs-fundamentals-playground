@@ -1,0 +1,57 @@
+What problem does the Strategy Pattern solve?	It lets you swap algorithms/behaviors without changing the caller code.
+When should I use Strategy Pattern?	Use it when one behavior has multiple variants and new variants are expected over time.
+When should I NOT use Strategy Pattern?	Do not use it when there is only one stable behavior and no expected variation.
+What is the core idea of Strategy Pattern?	Encapsulate each algorithm in its own class behind a common interface.
+What are the main participants in Strategy Pattern?	Context, Strategy interface, and Concrete Strategy implementations.
+What does the Context do in Strategy Pattern?	It delegates work to the currently selected strategy.
+How is Strategy different from a big if-else/switch block?	Strategy removes branching from one large method and localizes each behavior in its own class.
+What principle does Strategy support strongly?	Open/Closed Principle: add new strategy classes instead of modifying existing context logic.
+How does Strategy reduce blast radius?	Changing one algorithm affects only one strategy class instead of a central branching method.
+How does Strategy improve testing?	Each strategy can be unit-tested in isolation; context tests focus on wiring/delegation.
+What is a common trade-off of Strategy Pattern?	More classes/indirection, which can feel heavy for simple cases.
+How do you choose a strategy at runtime?	Inject it (constructor/setter/factory) based on config, request type, or user input.
+Payment example of Strategy Pattern?	PaymentContext uses PaymentStrategy interface; CardStrategy/PayPalStrategy/WalletStrategy are interchangeable.
+CSV example of Strategy Pattern?	CsvExporter depends on Sanitizer interface; StrictSanitizer and PermissiveSanitizer are swappable strategies.
+How is Strategy different from Template Method?	Template Method uses inheritance and fixed skeleton; Strategy uses composition and runtime-swappable behavior.
+How is Strategy different from State Pattern?	Strategy chooses algorithm externally; State changes behavior based on internal object state transitions.
+What is a good naming convention for strategy interfaces?	Use behavior-focused names like PaymentStrategy, PricingStrategy, Sanitizer.
+What is a red flag that suggests Strategy refactor?	A method keeps growing with conditionals for variants and breaks often when adding a new case.
+Interview one-liner for Strategy Pattern?	Strategy Pattern defines a family of algorithms, encapsulates each, and makes them interchangeable via composition.
+How to explain Strategy in 30 seconds?	When behavior has multiple evolving variants, put each variant behind a common interface and let a context delegate to the chosen implementation.
+What is behavior in OOD?	Behavior is what an object does: the actions and decisions it can perform through its methods.
+How is behavior different from state in OOD?	State is what an object knows (data/fields); behavior is what an object does (methods/logic).
+Why is behavior important in OOD?	Good object design centers on behavior so responsibilities are clear and changes stay localized.
+What does "encapsulate behavior" mean?	Put related logic behind a clear interface so callers use it without depending on internal details.
+How do you spot misplaced behavior?	If a class mostly reads/writes another class's data to do work, behavior likely belongs in the other class.
+What is an example of behavior in a payment domain?	Methods like authorize(), capture(), and refund() are behaviors because they execute business actions.
+What is "behavioral cohesion"?	Methods in a class should serve one responsibility and change for similar reasons.
+How does poor behavior design increase blast radius?	When unrelated behaviors are mixed in one class, small changes can break many paths and tests.
+In OOD, what does "tell, don't ask" mean?	Tell objects to do work instead of pulling their data out and making decisions elsewhere.
+How is Strategy related to behavior in OOD?	Strategy extracts variable behavior into interchangeable objects behind one interface.
+Show a minimal Strategy Pattern code example in TypeScript.	interface PaymentStrategy { pay(amount: number): string; } class CardPayment implements PaymentStrategy { pay(amount: number): string { return `Paid $${amount} by card`; } } class PaypalPayment implements PaymentStrategy { pay(amount: number): string { return `Paid $${amount} by PayPal`; } } class PaymentContext { constructor(private strategy: PaymentStrategy) {} setStrategy(strategy: PaymentStrategy): void { this.strategy = strategy; } checkout(amount: number): string { return this.strategy.pay(amount); } } const ctx = new PaymentContext(new CardPayment()); ctx.checkout(50); ctx.setStrategy(new PaypalPayment()); ctx.checkout(50);
+What is a concrete real-world example of Strategy Pattern?	Payment processing: `PaymentContext` depends on `PaymentStrategy`, while `CardPayment`, `PaypalPayment`, and `WalletPayment` provide different payment algorithms that can be swapped at runtime.
+How does the caller switch strategies in code?	The caller injects a different implementation into context, e.g. `context.setStrategy(new PaypalPayment())`, then calls the same `checkout()` method.
+What unit tests would you write for a Strategy Pattern payment example?	Test each strategy class behavior independently (Card/PayPal/Wallet), then test `PaymentContext` delegation and strategy switching without retesting payment internals.
+Show a concrete CSV sanitization Strategy example.	interface Sanitizer { sanitize(value: string): string; } class StrictSanitizer implements Sanitizer { sanitize(v: string): string { return v.replace(/[^\w\s-]/g, ''); } } class PermissiveSanitizer implements Sanitizer { sanitize(v: string): string { return v.trim(); } } class CsvExporter { constructor(private sanitizer: Sanitizer) {} setSanitizer(s: Sanitizer): void { this.sanitizer = s; } exportCell(raw: string): string { return this.sanitizer.sanitize(raw); } }
+What is behavior localization in OOD?	Behavior localization means keeping a behavior in one focused place, close to the data and rules it belongs to, instead of spreading it across many classes.
+Why is behavior localization important?	It reduces blast radius, improves readability, and makes testing/debugging easier because behavior changes happen in one place.
+Give a delocalized behavior example.	Bad example: discount logic is partly in controller, partly in service, and partly in utility methods, so changing one discount rule requires edits in multiple files.
+Give a localized behavior example.	Good example: all discount rules live in `DiscountPolicy` (or `PricingStrategy`) and callers delegate to it, so a rule change happens in one class.
+How can I detect poor behavior localization?	If one behavior change requires touching 3+ places, behavior is likely delocalized.
+How is behavior localization related to cohesion?	Localized behavior increases cohesion because a class has one clear responsibility and related methods change for the same reason.
+How is behavior localization related to "Tell, Don't Ask"?	With localization, callers tell an object to do work instead of pulling data out and doing the logic elsewhere.
+What is a concrete payment localization example?	`PaymentContext` delegates payment processing to `PaymentStrategy`; payment algorithms are localized in `CardPayment`, `PaypalPayment`, etc., not mixed in one giant method.
+What is a concrete CSV localization example?	`CsvExporter` delegates cell cleaning to `Sanitizer`; sanitization rules are localized in sanitizer classes instead of scattered across exporter, controller, and utility files.
+What is a common trade-off of behavior localization?	You may introduce more classes/interfaces, but gain maintainability and safer future changes.
+What is indirection in OOD?	Indirection means accessing behavior through an intermediate abstraction (like an interface or adapter) instead of calling a concrete implementation directly.
+Give a simple direct vs indirect example.	Direct: `exporter.sanitize(value)` calls concrete code in the exporter. Indirect: `exporter` calls `sanitizer.sanitize(value)` through a `Sanitizer` interface.
+What is a good indirection example in payments?	`CheckoutService` depends on `PaymentGateway` interface; concrete implementations like `StripeGateway` or `PaypalGateway` can be swapped without changing checkout logic.
+What is a good indirection example in notifications?	`Notifier` depends on `NotificationChannel` interface; `EmailChannel`, `SmsChannel`, and `PushChannel` are interchangeable implementations.
+What is a good indirection example in storage?	`UserRepository` depends on `UserStore` abstraction; you can switch from `PostgresUserStore` to `DynamoUserStore` without changing domain logic.
+How does indirection reduce coupling?	Callers depend on abstractions, so implementation changes stay behind the interface and do not force caller edits.
+How does indirection help testing?	You can inject a fake/mock implementation through the same interface to isolate and test caller behavior.
+What is over-indirection?	Adding abstractions with no real variation or change pressure, which makes code harder to follow without clear benefit.
+Give an over-indirection example.	Creating `ISanitizeService`, `SanitizeManager`, and `SanitizeProvider` when there is one stable sanitization rule and no expected variants.
+When is indirection worth the cost?	When behavior is likely to vary, external dependencies may change, or you need clear seams for testing and modularity.
+What is the trade-off of indirection?	You gain flexibility and safer change boundaries, but pay with extra classes, wiring, and mental hops during debugging.
+Interview one-liner: indirection in OOD?	Indirection introduces an abstraction layer between caller and implementation to reduce coupling and improve substitutability, at the cost of added complexity.

@@ -33,6 +33,16 @@ This repo is organized by topic groups so related ideas are learned together.
   - what is allowed in use-case orchestration vs what should be delegated
   - Start with [`8-use-case-orchestration-and-concerns/README.md`](8-use-case-orchestration-and-concerns/README.md)
 
+- [`12-design-principles-and-patterns/`](12-design-principles-and-patterns/)
+  - foundational notes for design patterns
+  - includes Strategy Pattern and why it is behavioral
+  - Start with [`12-design-principles-and-patterns/README.md`](12-design-principles-and-patterns/README.md)
+
+- [`13-inheritance-vs-composition-article/`](13-inheritance-vs-composition-article/)
+  - long-form article draft: inheritance is not for code reuse
+  - includes examples, trade-offs, and decision guide
+  - Start with [`13-inheritance-vs-composition-article/README.md`](13-inheritance-vs-composition-article/README.md)
+
 ## 4) Security fundamentals
 
 - [`security/xss/`](security/xss/)
@@ -52,16 +62,11 @@ This repo is organized by topic groups so related ideas are learned together.
   - shard model with replicas and reduced failure blast radius
   - Start with [`9-database-scaling-replication-and-sharding/README.md`](9-database-scaling-replication-and-sharding/README.md)
 
-## Quick start
+- [`11-postgresql-interview-drills/`](11-postgresql-interview-drills/)
+  - practical interview prep track (7 recurring PostgreSQL topics)
+  - Day 1 includes index drills with runnable setup + explain-analyze practice
+  - Start with [`11-postgresql-interview-drills/README.md`](11-postgresql-interview-drills/README.md)
 
-- Prerequisite: Node 20+
-- Run tests from repo root:
-
-```bash
-npm test -- 3-contracts-types-classes-composition/contracts-types-classes-composition.test.ts
-npm test -- 4-composition-root-pattern/composition-root-pattern.test.ts
-npm test -- 6-singleton-pattern/singleton-pattern.test.ts
 npm test -- 7-coupling-and-cohesion/coupling-and-cohesion.test.ts
 npm test -- 8-use-case-orchestration-and-concerns/use-case-orchestration-and-concerns.test.ts
-npm test -- security/xss/xss.test.ts
 ```
