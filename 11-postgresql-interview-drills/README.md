@@ -52,6 +52,7 @@ Hands-on drills:
 
 - Day 01 (setup sizes, **equality / range / ORDER BY / composite prefix**): [`day-01-indexes/README.md`](day-01-indexes/README.md)
 - Day 02 (from `Seq Scan` to `Index Only Scan` with covering indexes): [`day-02-covering-indexes/README.md`](day-02-covering-indexes/README.md)
+- Day 03 (how pages move from disk to RAM and why `Seq Scan` is page-based): [`day-03-pages-ram-and-sequential-scan/README.md`](day-03-pages-ram-and-sequential-scan/README.md)
 
 ---
 
