@@ -55,3 +55,43 @@ Give an over-indirection example.	Creating `ISanitizeService`, `SanitizeManager`
 When is indirection worth the cost?	When behavior is likely to vary, external dependencies may change, or you need clear seams for testing and modularity.
 What is the trade-off of indirection?	You gain flexibility and safer change boundaries, but pay with extra classes, wiring, and mental hops during debugging.
 Interview one-liner: indirection in OOD?	Indirection introduces an abstraction layer between caller and implementation to reduce coupling and improve substitutability, at the cost of added complexity.
+What is EXPLAIN in PostgreSQL?	It shows the planner's estimated execution plan without running the query.
+What is EXPLAIN ANALYZE in PostgreSQL?	It executes the query and shows actual runtime metrics for each plan node.
+Why use EXPLAIN (ANALYZE, BUFFERS)?	It combines real timing with page-level cache/read evidence so you can diagnose where time is spent.
+What does Seq Scan mean?	PostgreSQL is scanning table pages in order and checking rows against the filter.
+When can Seq Scan be the right choice?	When a query matches a large fraction of rows or the table is small enough that sequential read is cheaper.
+What is a heap table in PostgreSQL?	The heap is the main table storage where full row data is stored.
+What is the difference between index pages and heap pages?	Index pages store key/pointer structures; heap pages store full table rows.
+In PostgreSQL, are pages and blocks the same concept?	Yes; "page" and "block" are used interchangeably for fixed-size storage units.
+What is PostgreSQL block_size usually?	Usually 8192 bytes (8 KB).
+How can you verify PostgreSQL page/block size?	Run SHOW block_size;.
+Can PostgreSQL read one row directly from disk without touching a page?	No; disk I/O is page-oriented, then rows are processed from that page in memory.
+How many rows fit in one page?	It varies by row width, tuple overhead, dead tuples, and TOAST behavior.
+What does shared_blks_hit indicate?	Pages were found in shared buffers (cache hits) so no storage read was needed for those pages.
+What does shared_blks_read indicate?	Pages had to be loaded into shared buffers from the storage path (cache misses).
+What does blks_hit in pg_stat_database represent?	Database-level count of block hits found in cache.
+What does blks_read in pg_stat_database represent?	Database-level count of blocks read from storage path.
+What is cache_hit_pct in monitoring queries?	A derived ratio showing how often requested blocks were served from cache.
+Why are pg_stat_* counters often misleading as one-time snapshots?	They are cumulative totals, so you should compare deltas over a time window.
+What does Rows Removed by Filter tell you?	How many scanned rows were discarded after predicate evaluation.
+What is a composite index?	An index on multiple columns, such as (country, status), optimized for matching query patterns.
+What is the left-prefix rule for composite indexes?	An index on (a,b,c) is efficiently usable for predicates starting with a, then a+b, then a+b+c.
+What is a covering index in PostgreSQL?	An index that contains all columns needed by a query, often via INCLUDE columns.
+Why can a covering index speed up reads significantly?	It can enable Index Only Scan and avoid heap page lookups.
+What does Heap Fetches: 0 mean in Index Only Scan?	The query result was served from index pages without fetching rows from heap pages.
+What is Bitmap Heap Scan?	Planner uses index results to build a bitmap of candidate heap pages, then reads those pages.
+Why might Bitmap Heap Scan still be slower than Index Only Scan?	It still touches heap pages, while index-only can avoid those lookups.
+What is cache thrashing in PostgreSQL?	Repeated eviction and reloading of useful pages due to competing workloads or insufficient memory.
+What is a practical symptom of cache thrashing?	The same query alternates between fast and slow with rising shared_blks_read and disk read pressure.
+How can you intentionally reproduce cache thrashing in a lab?	Constrain DB container memory and run competing workloads that exceed the working set.
+How do you find high-I/O queries quickly in production?	Use pg_stat_statements and rank by shared_blks_read and total_exec_time.
+What is the most reliable way to confirm a DB tuning fix?	Compare before/after plans and metrics using the same query shape and workload window.
+What trade-off comes with adding more indexes?	Faster reads but slower writes, more storage use, and more maintenance work.
+When is a partial index useful?	When queries repeatedly target a subset of rows matching a stable predicate.
+When is an expression index useful?	When predicates apply a function (for example lower(email)) that a normal index cannot satisfy efficiently.
+What is one strong backend developer habit for DB performance work?	Treat every optimization as a measured experiment with hypothesis, evidence, and rollback plan.
+What is shared_buffers in PostgreSQL?	It is PostgreSQL's primary in-memory cache for table and index pages.
+How does shared_buffers relate to shared_blks_hit?	shared_blks_hit counts page requests served from shared_buffers without needing a storage read for those pages.
+How does shared_buffers relate to shared_blks_read?	shared_blks_read increases when needed pages are not already in shared_buffers and must be loaded through the storage path.
+Is shared_buffers the only cache affecting PostgreSQL reads?	No; the OS page cache also affects read behavior, so effective performance reflects both caches plus workload.
+Why does shared_buffers matter for query latency?	Higher useful cache residency reduces repeated page loads and usually lowers latency for repeated access patterns.

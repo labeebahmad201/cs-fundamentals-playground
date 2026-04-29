@@ -53,6 +53,8 @@ Hands-on drills:
 - Day 01 (setup sizes, **equality / range / ORDER BY / composite prefix**): [`day-01-indexes/README.md`](day-01-indexes/README.md)
 - Day 02 (from `Seq Scan` to `Index Only Scan` with covering indexes): [`day-02-covering-indexes/README.md`](day-02-covering-indexes/README.md)
 - Day 03 (how pages move from disk to RAM and why `Seq Scan` is page-based): [`day-03-pages-ram-and-sequential-scan/README.md`](day-03-pages-ram-and-sequential-scan/README.md)
+- Day 04 (cache thrashing scenarios, detection, and production monitoring): [`day-04-thrashing-scenarios-and-monitoring/README.md`](day-04-thrashing-scenarios-and-monitoring/README.md)
+- Day 05 (15-lab backend developer DB mastery program for top 10-15%): [`day-05-backend-db-mastery-labs/README.md`](day-05-backend-db-mastery-labs/README.md)
 
 ---
 

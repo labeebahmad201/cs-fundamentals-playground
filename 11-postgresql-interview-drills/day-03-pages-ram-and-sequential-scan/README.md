@@ -16,6 +16,35 @@ That means:
 - you fetch a page that contains many rows
 - then PostgreSQL checks each row in memory against your filter
 
+## Page and block essentials (quick reference)
+
+If you are new to low-level PostgreSQL tuning, these are the few facts worth memorizing:
+
+- **Page vs block:** in PostgreSQL usage, "page" and "block" mean the same storage unit.
+- **Default size:** one page/block is usually **8 KB**.
+- **How to verify on your instance:**
+
+```sql
+SHOW block_size;
+```
+
+This usually returns `8192` bytes.
+
+- **Why this matters:** metrics like `blks_read`, `blks_hit`, `shared_blks_read`, and `shared_blks_hit` are counts of these blocks.
+- **Quick mental math:** `1000` blocks is roughly `1000 * 8 KB`, about `8 MB`.
+- **Rows per page:** there is no fixed row count per page; it depends on row width and storage overhead.
+
+Rows-per-page factors:
+
+- narrow rows fit many per page; wide rows fit fewer
+- variable-length columns (`text`, `jsonb`) change row footprint
+- update/delete churn leaves dead tuples until vacuum cleanup
+- TOAST can move very large attributes off-page
+
+So in tuning, think in terms of pages touched and bytes moved, not "N rows per page" as a constant.
+
+This is why query tuning is often about reducing **pages touched**, not only rows returned.
+
 ## Where pages live: disk and RAM
 
 A table is persisted on disk as many pages. During query execution, PostgreSQL loads needed pages into memory:
@@ -30,6 +59,20 @@ In `EXPLAIN (ANALYZE, BUFFERS)`:
 - `shared read` = page had to be loaded
 
 So the performance story is usually about **how many pages you touch**, not only how many rows you return.
+
+## What is shared_buffers?
+
+`shared_buffers` is PostgreSQL's main in-memory cache for table and index pages.
+
+- PostgreSQL checks this cache first before reading pages from storage.
+- If a page is found there, plan output shows more `shared hit`.
+- If a page is missing, PostgreSQL loads it and you see `shared read`.
+
+Important nuance:
+
+- `shared_buffers` is not the only cache in the system.
+- The OS page cache also exists and can serve reads.
+- So tuning is about the combined behavior of PostgreSQL cache + OS cache + workload pattern.
 
 ## What a sequential scan actually does
 
