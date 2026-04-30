@@ -74,6 +74,13 @@ This repo is organized by topic groups so related ideas are learned together.
   - includes skill matrix, pacing, and weekly integration plan
   - Start with [`14-nodejs-react-mastery-labs/README.md`](14-nodejs-react-mastery-labs/README.md)
 
+## 7) Platform and cloud mastery track
+
+- [`15-reverse-proxy-load-balancing-cloud-k8s-mastery-labs/`](15-reverse-proxy-load-balancing-cloud-k8s-mastery-labs/)
+  - reverse proxy, load balancing, cloud resilience, and Kubernetes operations
+  - top 10-15% interview-focused labs + question bank
+  - Start with [`15-reverse-proxy-load-balancing-cloud-k8s-mastery-labs/README.md`](15-reverse-proxy-load-balancing-cloud-k8s-mastery-labs/README.md)
+
 npm test -- 7-coupling-and-cohesion/coupling-and-cohesion.test.ts
 npm test -- 8-use-case-orchestration-and-concerns/use-case-orchestration-and-concerns.test.ts
 ```
