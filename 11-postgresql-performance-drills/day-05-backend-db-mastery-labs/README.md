@@ -126,6 +126,55 @@ WHERE u.country = 'US'
 ORDER BY o.created_at DESC
 LIMIT 200;
 
+Limit  (cost=0.72..310.86 rows=200 width=41) (actual time=0.059..6.697 rows=200 loops=1)
+  Buffers: shared hit=6199
+  ->  Nested Loop  (cost=0.72..78881.59 rows=50868 width=41) (actual time=0.058..6.669 rows=200 loops=1)
+        Buffers: shared hit=6199
+        ->  Index Scan using idx_orders_created_at_desc on orders o  (cost=0.42..20788.38 rows=400000 width=28) (actual time=0.013..1.371 rows=1607 loops=1)
+              Buffers: shared hit=1402
+        ->  Memoize  (cost=0.30..0.34 rows=1 width=29) (actual time=0.003..0.003 rows=0 loops=1607)
+              Cache Key: o.user_id
+              Cache Mode: logical
+              Hits: 8  Misses: 1599  Evictions: 0  Overflows: 0  Memory Usage: 125kB
+              Buffers: shared hit=4797
+              ->  Index Scan using users_pkey on users u  (cost=0.29..0.33 rows=1 width=29) (actual time=0.003..0.003 rows=0 loops=1599)
+                    Index Cond: (id = o.user_id)
+                    Filter: (country = 'US'::text)
+                    Rows Removed by Filter: 1
+                    Buffers: shared hit=4797
+Planning:
+  Buffers: shared hit=6
+Planning Time: 0.175 ms
+Execution Time: 6.865 ms
+
+-- Q3 plan notes:
+-- 1) shared hit=6199 means all touched shared-buffer pages came from RAM cache in this run.
+-- 2) No `shared read` is shown, so there were effectively zero disk page reads here.
+-- 3) Planner uses Nested Loop because query is top-N ordered (`ORDER BY o.created_at DESC LIMIT 200`) and can stop early.
+-- 4) Outer path scans orders by created_at DESC index order, then probes users by PK for each candidate order row.
+-- 5) It scanned 1607 order rows to produce final 200 joined rows after applying `u.country = 'US'`.
+-- 6) There is no predicate on orders in WHERE clause, so Q3 shows no extra order-side filter condition.
+-- 7) `Memoize` caches repeated `o.user_id` lookups; high misses here means most scanned user_ids were unique.
+-- 8) `Rows Removed by Filter` shows rows fetched by users PK probe that failed `country = 'US'`.
+-- 9) This is index probe + heap access (`Index Scan`), not index-only; still fast because most pages were cached.
+-- 10) Planning time = time to choose plan; execution time = time to run plan and return rows.
+-- 11) Tuning insight: if `country='US'` is selective, a plan starting from filtered users may win. Data distribution decides.
+-- 12) Helpful experiment: compare with and without an index such as `users(country, id)` and inspect join order changes.
+--
+-- Q3 original comments (raw thought process):
+-- * Buffers: shared hit=6199 -> this many shared-buffer pages were served from memory cache.
+-- * Index Scan here means this is not index-only, but still fast because most pages are cache hits.
+-- * Nested Loop join: planner is iterating outer rows and probing inner rows per candidate (can become expensive without selective access paths).
+-- * Since query text starts with FROM orders JOIN users, I initially wondered if DB first loads all orders.
+-- * Plan shows it actually walks `idx_orders_created_at_desc` first (ordered access), then probes users.
+-- * I wondered: if there were WHERE conditions on orders, would they appear on this orders scan node?
+-- * Buffers: shared hit=1402 on orders indicates those pages were already warm in buffer cache.
+-- * Memoize: I noticed misses >> hits (1599 vs 8), so user_id reuse was low in this sample window.
+-- * Users probe uses `users_pkey`, then applies country filter (`country='US'`).
+-- * This made me think: order-side predicates should show at the orders scan, users-side predicates at users probe/filter.
+-- * Initial join-performance takeaway: index both join keys, and reduce outer-side candidate rows to reduce inner probes.
+-- * Open question I wanted clarified: planning time vs execution time.
+
 -- Q4: Sort-heavy query
 EXPLAIN (ANALYZE, BUFFERS)
 SELECT id, amount_cents, created_at
@@ -133,12 +182,76 @@ FROM orders
 ORDER BY amount_cents DESC
 LIMIT 5000;
 
+Limit  (cost=17073.81..17657.18 rows=5000 width=20) (actual time=41.406..44.466 rows=5000 loops=1)
+  Buffers: shared hit=1346 read=2060
+  ->  Gather Merge  (cost=17073.81..55965.49 rows=333334 width=20) (actual time=41.404..44.118 rows=5000 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=1346 read=2060
+        ->  Sort  (cost=16073.78..16490.45 rows=166667 width=20) (actual time=37.392..37.570 rows=2457 loops=3)
+              Sort Key: amount_cents DESC
+              Sort Method: top-N heapsort  Memory: 977kB
+              Buffers: shared hit=1346 read=2060
+              Worker 0:  Sort Method: top-N heapsort  Memory: 980kB
+              Worker 1:  Sort Method: top-N heapsort  Memory: 982kB
+              ->  Parallel Seq Scan on orders  (cost=0.00..5000.67 rows=166667 width=20) (actual time=0.017..18.406 rows=133333 loops=3)
+                    Buffers: shared hit=1274 read=2060
+Planning:
+  Buffers: shared hit=9
+Planning Time: 0.133 ms
+Execution Time: 44.682 ms
+
+-- Q4 improvement command:
+CREATE INDEX idx_orders_amount_cents
+ON orders(amount_cents DESC);
+ANALYZE orders;
+
+Limit  (cost=0.42..283.32 rows=5000 width=20) (actual time=0.068..5.046 rows=5000 loops=1)
+  Buffers: shared hit=4996 read=13
+  ->  Index Scan using idx_orders_amount_cents on orders  (cost=0.42..22632.41 rows=400000 width=20) (actual time=0.067..4.672 rows=5000 loops=1)
+        Buffers: shared hit=4996 read=13
+Planning:
+  Buffers: shared hit=16 read=1
+Planning Time: 0.245 ms
+Execution Time: 5.249 ms
+
+-- Q4 post-improvement report:
+-- 1) Before index, planner used Parallel Seq Scan + top-N heapsort + Gather Merge.
+-- 2) That path had to scan large table portions and sort candidate rows to find top 5000.
+-- 3) It touched many pages from storage (`shared read=2060`) and ran in ~44.7 ms.
+-- 4) After adding `(amount_cents DESC)` index, planner switched to direct ordered Index Scan + LIMIT.
+-- 5) This removed global scan/sort work and enabled early stop after first 5000 index entries.
+-- 6) Runtime dropped to ~5.25 ms (~8.5x faster in this run).
+-- 7) Read pressure dropped sharply (`shared read=13`), showing far fewer uncached pages needed.
+-- 8) Pattern summary: ORDER BY X DESC LIMIT N + matching index order is a classic top-N optimization.
+
 -- Q5: Aggregate
 EXPLAIN (ANALYZE, BUFFERS)
 SELECT state, count(*) AS cnt, avg(amount_cents) AS avg_amount
 FROM orders
 GROUP BY state
 ORDER BY cnt DESC;
+
+-- Index selectivity + slowdown notes:
+-- 1) Selectivity = matched_rows / total_rows.
+-- 2) High selectivity (small fraction matched) usually favors index scans.
+-- 3) Low selectivity (large fraction matched) often favors seq scan.
+-- 4) Why indexes can get slower at larger match fractions:
+--    - many index probes + many heap fetches
+--    - more random page access
+--    - less advantage over a linear sequential read
+-- 5) Practical slowdown signals in plans:
+--    - matched rows become a large share of table
+--    - heap/page touches rise sharply
+--    - index/bitmap plan time grows and planner flips to seq scan
+-- 6) How to find your crossover point (do not guess):
+--    - run EXPLAIN (ANALYZE, BUFFERS) at multiple predicate widths
+--      (for example: 1%, 5%, 10%, 20%, 40%, 60% match)
+--    - record plan type, execution time, shared hit/read, returned rows
+--    - identify where seq scan becomes equal/faster
+-- 7) Key lesson from this lab:
+--    - adding an index does not guarantee usage;
+--      query shape (ORDER BY + LIMIT), join direction, and selectivity drive planner choice.
 ```
 
 ### How to read the sample output (Q1)
@@ -155,14 +268,14 @@ For the sample plan shown under Q1:
 
 1. Run all five queries and save each plan output.
 2. For each plan, identify:
-   - scan type(s) (`Seq Scan`, `Index Scan`, `Bitmap Heap Scan`, etc.)
-   - most expensive node by time
-   - presence of sort/hash nodes
-   - buffer behavior (`shared hit` vs `shared read`)
+  - scan type(s) (`Seq Scan`, `Index Scan`, `Bitmap Heap Scan`, etc.)
+  - most expensive node by time
+  - presence of sort/hash nodes
+  - buffer behavior (`shared hit` vs `shared read`)
 3. Write a 3-line diagnosis per query:
-   - What shape is this query?
-   - What is the dominant cost?
-   - One likely optimization idea.
+  - What shape is this query?
+  - What is the dominant cost?
+  - One likely optimization idea.
 4. Re-run the same five queries and compare second-run buffer/timing behavior (warm vs colder cache effect).
 
 Success criteria:
@@ -497,10 +610,10 @@ Steps:
 
 1. Pick a slow query from your earlier labs.
 2. In one hour:
-   - read its plan
-   - propose two fixes with trade-offs
-   - implement one
-   - prove improvement with evidence
+  - read its plan
+  - propose two fixes with trade-offs
+  - implement one
+  - prove improvement with evidence
 3. Narrate decisions out loud while doing it.
 
 Success criteria:
@@ -517,14 +630,16 @@ Proof artifact: short writeup with the decision narrative.
 
 ## Skill matrix to track
 
-| Area | Beginner | Capable | Senior | Top 10-15% |
-| --- | --- | --- | --- | --- |
-| Plan reading | reads names | finds expensive node | explains plan and fixes | drives team-wide reviews |
-| Index design | adds one column | composite ordering | covering + partial + expr | predicts trade-offs cleanly |
-| Monitoring | knows logs | uses `pg_stat_statements` | dashboards top-N | drives alerting strategy |
-| Concurrency | basic SQL | knows isolation | resolves locks safely | guides design to avoid them |
-| Scaling | knows replicas | uses replica reads | partitions where useful | makes informed scaling choices |
-| Communication | shares results | explains tradeoffs | writes postmortems | influences engineering culture |
+
+| Area          | Beginner        | Capable                   | Senior                    | Top 10-15%                     |
+| ------------- | --------------- | ------------------------- | ------------------------- | ------------------------------ |
+| Plan reading  | reads names     | finds expensive node      | explains plan and fixes   | drives team-wide reviews       |
+| Index design  | adds one column | composite ordering        | covering + partial + expr | predicts trade-offs cleanly    |
+| Monitoring    | knows logs      | uses `pg_stat_statements` | dashboards top-N          | drives alerting strategy       |
+| Concurrency   | basic SQL       | knows isolation           | resolves locks safely     | guides design to avoid them    |
+| Scaling       | knows replicas  | uses replica reads        | partitions where useful   | makes informed scaling choices |
+| Communication | shares results  | explains tradeoffs        | writes postmortems        | influences engineering culture |
+
 
 Aim to reach the "Top 10-15%" column in at least 4 of 6 areas before declaring this program complete.
 

@@ -1,4 +1,4 @@
-# PostgreSQL Interview Drills
+# PostgreSQL Performance Drills
 
 ## Core Index Topics
 
@@ -20,7 +20,7 @@ An index is a separate data structure PostgreSQL keeps to find rows faster witho
 - Index stores key values plus pointers (TIDs) to heap rows.
 - Query planner decides whether index scan or sequential scan is cheaper.
 
-Interview one-liner:
+One-liner:
 "An index is a lookup structure that trades extra storage and write cost for faster reads."
 
 ### Where does an index live: RAM or disk?
@@ -135,7 +135,7 @@ So more indexes means:
 - larger storage
 - more vacuum/maintenance work
 
-Interview framing:
+Practical framing:
 
 - Reads get faster with good indexes.
 - Writes get slower as index count/complexity grows.
@@ -143,7 +143,7 @@ Interview framing:
 
 ---
 
-## Quick interview contrast: index vs table data
+## Quick contrast: index vs table data
 
 - Table (heap): full row storage, source of truth.
 - Index: auxiliary access path to locate rows faster.
