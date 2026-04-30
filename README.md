@@ -62,10 +62,17 @@ This repo is organized by topic groups so related ideas are learned together.
   - shard model with replicas and reduced failure blast radius
   - Start with [`9-database-scaling-replication-and-sharding/README.md`](9-database-scaling-replication-and-sharding/README.md)
 
-- [`11-postgresql-interview-drills/`](11-postgresql-interview-drills/)
-  - practical interview prep track (7 recurring PostgreSQL topics)
+- [`11-postgresql-performance-drills/`](11-postgresql-performance-drills/)
+  - practical PostgreSQL performance track (7 recurring topics)
   - Day 1 includes index drills with runnable setup + explain-analyze practice
-  - Start with [`11-postgresql-interview-drills/README.md`](11-postgresql-interview-drills/README.md)
+  - Start with [`11-postgresql-performance-drills/README.md`](11-postgresql-performance-drills/README.md)
+
+## 6) Fullstack mastery track
+
+- [`14-nodejs-react-mastery-labs/`](14-nodejs-react-mastery-labs/)
+  - 25-lab Node.js + React senior-level progression with interview framing
+  - includes skill matrix, pacing, and weekly integration plan
+  - Start with [`14-nodejs-react-mastery-labs/README.md`](14-nodejs-react-mastery-labs/README.md)
 
 npm test -- 7-coupling-and-cohesion/coupling-and-cohesion.test.ts
 npm test -- 8-use-case-orchestration-and-concerns/use-case-orchestration-and-concerns.test.ts

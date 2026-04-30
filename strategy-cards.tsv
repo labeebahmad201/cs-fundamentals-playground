@@ -95,3 +95,24 @@ How does shared_buffers relate to shared_blks_hit?	shared_blks_hit counts page r
 How does shared_buffers relate to shared_blks_read?	shared_blks_read increases when needed pages are not already in shared_buffers and must be loaded through the storage path.
 Is shared_buffers the only cache affecting PostgreSQL reads?	No; the OS page cache also affects read behavior, so effective performance reflects both caches plus workload.
 Why does shared_buffers matter for query latency?	Higher useful cache residency reduces repeated page loads and usually lowers latency for repeated access patterns.
+What does Buffers: shared hit=6199 (without shared read) imply in EXPLAIN ANALYZE?	The query touched many pages but served them from shared buffer cache; no storage-page reads were needed in that run.
+Why can a Nested Loop be a good plan for ORDER BY ... LIMIT queries?	With top-N queries, planner can use an ordered outer path and stop early after enough matches, making nested probes efficient.
+In a join plan, does FROM orders JOIN users mean PostgreSQL fully reads orders first?	No; planner chooses access paths and join order independently of SQL writing order when semantics allow.
+Why did PostgreSQL scan ~1600 orders to return 200 rows in the country-filtered join?	It needed to probe users and discard non-matching country rows until 200 joined rows satisfied the filter.
+What does Memoize do in PostgreSQL join plans?	It caches results of repeated parameterized lookups (for example repeated user_id probes) to avoid redoing identical index scans.
+How do you interpret Memoize Hits low and Misses high?	The join key had low reuse in the scanned slice, so memoization provided limited benefit.
+What is selectivity in query planning?	Selectivity is matched_rows / total_rows; lower ratios are more selective and usually more index-friendly.
+Why can an index become slower as selectivity decreases?	As more rows match, index probes plus heap fetches and random access can cost more than one sequential table pass.
+How do you find the index-vs-seq-scan crossover point?	Run EXPLAIN (ANALYZE, BUFFERS) at multiple predicate widths (for example 1%, 5%, 10%, 20%, 40%, 60%) and compare plan type and time.
+Why might users(country, id) be useful while users(id, country) is often redundant?	(country, id) supports country-first filtering + join, while (id, country) overlaps users_pkey(id) and does not efficiently serve country-only filtering.
+Why might users(country, id) still not be chosen in a join query?	Query shape (especially top-N order-driven paths), data distribution, and cost estimates may still favor orders-first + users_pkey probes.
+What does planning time vs execution time mean in EXPLAIN ANALYZE?	Planning time is optimizer work to choose a plan; execution time is running that plan and returning rows.
+What is a senior takeaway when a query is already ~5 ms and stable?	Document why the plan is fast and avoid speculative indexes unless real workload evidence demands change.
+Does creating an index guarantee PostgreSQL will use it?	No; planner chooses the lowest estimated total cost plan based on query shape, statistics, and available paths.
+What practical signals suggest an index path is degrading?	Growing matched-row fraction, rising heap/page touches, increasing random reads, and eventual planner shift to bitmap/seq scan.
+Can PostgreSQL avoid per-query planning time in production?	Yes, with prepared statements/plan caching (often via drivers): planning overhead can drop, but generic reused plans may execute worse than custom parameter-specific plans for skewed data.
+Why did ORDER BY amount_cents DESC LIMIT 5000 use Parallel Seq Scan + Sort before indexing?	Without a matching order index, PostgreSQL had to scan many rows and perform top-N sorting to discover the highest amount_cents values.
+Why does an index on (amount_cents DESC) speed up ORDER BY amount_cents DESC LIMIT N?	The index already stores rows in required order, so PostgreSQL can walk the index and stop after N rows without full scan/sort.
+What plan shape change indicates a successful top-N index optimization?	Before: Parallel Seq Scan + Sort + Gather Merge; After: direct Index Scan in ORDER BY direction plus early LIMIT stop.
+How do buffers confirm the Q4 top-N index improvement?	Before showed high reads (for example shared read=2060); after index reads dropped sharply (for example shared read=13), indicating far fewer uncached pages touched.
+What was the approximate Q4 runtime improvement after creating idx_orders_amount_cents?	Execution dropped from about 44.7 ms to about 5.25 ms, roughly an 8.5x improvement in that run.
